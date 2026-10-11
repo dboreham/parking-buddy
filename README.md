@@ -7,6 +7,10 @@ you set the building size and doors, pick some vehicles, then simulates driving
 each one in. Each vehicle steers within its real turning circle, keeps clearance
 from walls, door jambs and other vehicles, and backs up when it needs to.
 
+<p align="center">
+  <img src="docs/demo.gif" width="380" alt="Animation of five vehicles driving one at a time through a single 14 ft door into a 32 by 52 ft barn and parking in rows">
+</p>
+
 It's a static web app: plain HTML, CSS and ES modules with no build step and no
 dependencies.
 

@@ -1,3 +1,6 @@
 node_modules/
 test-results/
 playwright-report/
+
+# Screen recordings (convert to docs/demo.gif instead)
+*.mp4
