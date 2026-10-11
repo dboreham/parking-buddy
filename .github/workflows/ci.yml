@@ -17,10 +17,12 @@ jobs:
     name: Unit tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: lts/*
+          # Nothing is installed in this job, so there is nothing to cache.
+          package-manager-cache: false
       # Unit tests use only Node's built-in runner; no npm install needed.
       - run: npm test
 
@@ -28,8 +30,8 @@ jobs:
     name: Browser tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: lts/*
           cache: npm
@@ -39,7 +41,7 @@ jobs:
       - run: npm run test:e2e
       - name: Upload report and traces
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: playwright-report
           path: |
