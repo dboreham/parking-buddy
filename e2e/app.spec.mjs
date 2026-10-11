@@ -99,6 +99,19 @@ test('a 9 ft door is too narrow for a crew-cab pickup', async ({ page }) => {
   await expect(vehicleRow(page, 'Full-size pickup')).toContainText('Not parked');
 });
 
+test('quick access brings a vehicle to the front of its bay', async ({ page }) => {
+  const before = (await idle(page)).result.vehicles.find((v) => v.name === 'Large SUV');
+  await page.locator('#vehicles .item', { has: page.locator('input.name[value="Large SUV"]') })
+    .getByLabel('Quick access').check();
+  await page.waitForFunction(() => document.querySelector('#results')?.textContent.includes('quick access'));
+  const s = await idle(page);
+  const suv = s.result.vehicles.find((v) => v.name === 'Large SUV');
+  expect(suv.exitOk).toBe(true);
+  expect(suv.depth).toBeLessThan(before.depth - 5);
+  for (const v of s.result.vehicles) expect(suv.depth).toBeLessThanOrEqual(v.depth);
+  await expect(vehicleRow(page, 'Large SUV')).toContainText('quick access');
+});
+
 async function dragCar(page, name, dx, dy) {
   const s = await idle(page);
   await skipToEnd(page);

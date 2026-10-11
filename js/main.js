@@ -230,9 +230,20 @@ function renderVehicles() {
         }, '✕'),
       ),
       el('div', { class: 'dims' }, describeVehicle(v), pinInfo),
+      quickToggle(v),
       details,
     ));
   });
+}
+
+function quickToggle(v) {
+  const cb = el('input', { type: 'checkbox', checked: !!v.quickAccess });
+  cb.onchange = () => { v.quickAccess = cb.checked; configChanged(); };
+  return el('label', {
+    class: 'check quick',
+    title: 'Park this vehicle nearest a door with a clear way out, even if that blocks others in. '
+      + 'Useful for the daily driver, or a vehicle that brings in snow.',
+  }, cb, 'Quick access (park near a door)');
 }
 
 function renderObstacles() {
@@ -583,7 +594,8 @@ function renderResults() {
         `via ${door}, ${how} · `, exit,
         ' ',
         r.spacingOk === false ? el('span', { class: 'status-warn' }, ' · ⚠ tighter than the parked-gap rule') : null,
-        vehicleById(r.id)?.pin ? el('span', { class: 'pin' }, 'pinned') : null);
+        vehicleById(r.id)?.pin ? el('span', { class: 'pin' }, 'pinned') : null,
+        v.quickAccess ? el('span', { class: 'pin quick-badge' }, 'quick access') : null);
     }
     return el('tr', {}, el('td', {}, sw), el('td', {}, el('strong', {}, name(r.id))), el('td', {}, status));
   });
@@ -720,7 +732,7 @@ window.__parkingBuddy = {
         vehicles: result.results.map((r) => {
           const v = result.snap.vehicles.find((x) => x.id === r.id);
           const centre = r.parked ? bodyObb(vehicleModel(v), r.pose.x, r.pose.y, r.pose.th) : null;
-          return { id: r.id, name: v.name, parked: r.parked, reason: r.reason, pose: r.pose, centre: centre && [centre.cx, centre.cy] };
+          return { id: r.id, name: v.name, parked: r.parked, reason: r.reason, pose: r.pose, depth: r.depth, exitOk: !!r.exit?.ok, centre: centre && [centre.cx, centre.cy] };
         }),
       },
     };

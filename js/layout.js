@@ -92,14 +92,26 @@ function doorDepth(d, x, y) {
   return perp + 0.5 * Math.max(0, lat - d.width / 2);
 }
 
+function nearestDoorDepth(world, x, y) {
+  let depth = Infinity;
+  for (const d of world.doors) depth = Math.min(depth, doorDepth(d, x, y));
+  return depth;
+}
+
 // Scores are in rough "feet of benefit" units.
 const W = { depth: 1.0, touch: 0.75, lane: 12, offAxisDeg: 0.15, cost: 0.5, blocks: 200, noise: 25 };
+// Quick-access vehicles want the spot nearest a door, and may block others'
+// way out when that buys them a meaningfully closer spot.
+const WQ = { depth: -1.5, blocks: 10 };
 
-function chooseAuto(ctx, search, m, remaining) {
+function chooseAuto(ctx, search, m, remaining, quick) {
   const { world, parked, rng, noise } = ctx;
   const s = world.settings;
   const solids = [...staticObbs(world), ...parked.map((p) => p.body)];
-  const lanes = remaining > 0 ? doorLanes(world, ctx.laneDepth) : [];
+  // Quick-access vehicles are meant to sit in front of a door.
+  const lanes = remaining > 0 && !quick ? doorLanes(world, ctx.laneDepth) : [];
+  const wDepth = quick ? WQ.depth : W.depth;
+  const wBlocks = quick ? WQ.blocks : W.blocks;
   const sweeps = s.requireExit === false ? [] : parked.map((p) => p.sweep);
   let best = -1, bestScore = -Infinity;
   const seen = new Set();
@@ -113,17 +125,16 @@ function chooseAuto(ctx, search, m, remaining) {
     seen.add(key);
     if (!parkValid(world, m, x, y, th, parked)) continue;
     const box = bodyObb(m, x, y, th, Math.max(0, s.endGap), Math.max(0, s.parkGap));
-    let depth = Infinity;
-    for (const d of world.doors) depth = Math.min(depth, doorDepth(d, box.cx, box.cy));
+    const depth = nearestDoorDepth(world, box.cx, box.cy);
     let touches = 0;
     for (let side = 0; side < 4; side++) if (sideTouches(box, side, 1.0, solids)) touches++;
     let laneHits = 0;
     for (const l of lanes) if (obbOverlap(box, l)) laneHits++;
     const offAxis = angleDiff(th, Math.round(th / (Math.PI / 2)) * (Math.PI / 2)) * 180 / Math.PI;
-    let score = W.depth * depth + W.touch * touches - W.lane * laneHits - W.offAxisDeg * offAxis - W.cost * search.cost(idx);
+    let score = wDepth * depth + W.touch * touches - W.lane * laneHits - W.offAxisDeg * offAxis - W.cost * search.cost(idx);
     if (sweeps.length) {
       const bare = bodyObb(m, x, y, th);
-      for (const sw of sweeps) if (blocksSweep(bare, sw)) score -= W.blocks;
+      for (const sw of sweeps) if (blocksSweep(bare, sw)) score -= wBlocks;
     }
     if (noise) score += noise * W.noise * rng();
     if (score > bestScore) { bestScore = score; best = idx; }
@@ -190,13 +201,12 @@ export function planLayout(config, options = {}) {
   const ctx = { world, parked: [], rng, noise: options.noise || 0, laneDepth };
   const results = vehicles.map((v) => ({ id: v.id, parked: false, reason: 'not attempted' }));
   // Pinned vehicles are parked first (deepest first) so the automatic ones
-  // work around them.
-  const depth = (i) => {
-    const p = vehicles[i].pin;
-    return Math.min(...world.doors.map((d) => doorDepth(d, p.x, p.y)));
-  };
+  // work around them. Quick-access vehicles go last, once the deep spots
+  // are taken, so they end up nearest the doors.
+  const depth = (i) => nearestDoorDepth(world, vehicles[i].pin.x, vehicles[i].pin.y);
   const pinned = order.filter((i) => vehicles[i].pin).sort((a, b) => depth(b) - depth(a));
-  const seq = [...pinned, ...order.filter((i) => !vehicles[i].pin)];
+  const auto = order.filter((i) => !vehicles[i].pin);
+  const seq = [...pinned, ...auto.filter((i) => !vehicles[i].quickAccess), ...auto.filter((i) => vehicles[i].quickAccess)];
 
   seq.forEach((vi, n) => {
     const v = vehicles[vi];
@@ -213,7 +223,7 @@ export function planLayout(config, options = {}) {
       results[vi] = { id: v.id, parked: false, reason: 'pinned spot is not inside the building' };
       return;
     }
-    const idx = v.pin ? choosePinned(world, m, search, v.pin) : chooseAuto(ctx, search, m, seq.length - n - 1);
+    const idx = v.pin ? choosePinned(world, m, search, v.pin) : chooseAuto(ctx, search, m, seq.length - n - 1, !!v.quickAccess);
     if (idx < 0) {
       results[vi] = {
         id: v.id, parked: false,
@@ -233,6 +243,7 @@ export function planLayout(config, options = {}) {
     results[vi] = {
       id: v.id, parked: true, pose: { x: pose.x, y: pose.y, th: pose.th }, path,
       seq: n, door: entry ? entry.door : null,
+      depth: nearestDoorDepth(world, ctx.parked.at(-1).body.cx, ctx.parked.at(-1).body.cy),
       spacingOk: parkValid(world, m, pose.x, pose.y, pose.th, ctx.parked.slice(0, -1)),
       ...summarizePath(path),
     };

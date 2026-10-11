@@ -127,6 +127,8 @@ input.auto { color: var(--muted); font-style: italic; }
 .obst-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)) auto; gap: 4px; align-items: end; margin-bottom: 6px; }
 .dims { color: var(--muted); font-size: 12px; margin-top: 4px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .pin { color: var(--warn); font-weight: 600; border: 1px solid currentColor; border-radius: 4px; padding: 0 4px; font-size: 11px; }
+label.check.quick { margin-top: 4px; font-size: 12px; }
+.quick-badge { color: var(--accent); margin-left: 4px; }
 details summary { cursor: pointer; color: var(--accent); font-size: 12px; margin-top: 4px; }
 details .grid3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin-top: 6px; }
 

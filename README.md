@@ -31,7 +31,10 @@ To deploy, copy `index.html`, `css/` and `js/` to any static host.
 - **Vehicles**: start from a preset (compact car, compact SUV, large SUV, crew-cab
   pickup, sports car) and edit the dimensions. Use the spec-sheet *curb-to-curb
   turning circle*, and the width across the mirrors. Mirrors are often what
-  decides whether a vehicle gets through a door.
+  decides whether a vehicle gets through a door. Tick **Quick access** on any
+  vehicle you need out fast, or one that comes in covered in snow. It is parked
+  last, as near a door as possible with a clear way out, even if that blocks
+  others in.
 - **Obstacles**: posts, benches, stairs, as rectangles.
 - **Rules**: clearance while moving, the side gap needed to open doors when parked,
   the end gap, the driveway apron depth, whether angled parking is allowed, and
@@ -39,8 +42,12 @@ To deploy, copy `index.html`, `css/` and `js/` to any static host.
 
 **Run simulation** parks the vehicles in list order and animates them.
 **Explore layouts** tries many random parking orders and spot choices, then keeps
-the best result. "Best" means the most vehicles parked, then the most that can
-leave without moving anything, then the fewest manoeuvres.
+the best result. "Best" means, in order:
+1. the most vehicles parked;
+2. quick-access vehicles able to drive straight out;
+3. the most vehicles that can leave without moving anything;
+4. quick-access vehicles as close to a door as possible;
+5. the fewest manoeuvres.
 
 To tell it where you want a vehicle, **drag it on the plan**. That pins it. Scroll
 the mouse wheel over a vehicle to rotate it 5° (hold Shift for 15°), or press `R`

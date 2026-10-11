@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { buildWorld, defaultConfig } from '../js/world.js';
 import { newVehicle, vehicleModel, bodyObb, mirrorObb } from '../js/vehicles.js';
 import { planLayout, parkValid } from '../js/layout.js';
-import { explore, layoutScore } from '../js/explore.js';
+import { explore, compareLayouts } from '../js/explore.js';
 import { Search } from '../js/planner.js';
 import { rectObb, obbOverlap } from '../js/geometry.js';
 import { scenarios, makeConfig } from './scenarios.mjs';
@@ -123,19 +123,74 @@ test('larger clearance and side gap never fit more vehicles', () => {
   assert.ok(planLayout(loose).parkedCount <= planLayout(tight).parkedCount);
 });
 
-test('layoutScore ranks parked count, then free exits, then fewer moves', () => {
-  const mk = (parked, free, moves) => ({ parkedCount: parked, freeExit: free, results: [{ parked: true, moves }] });
-  assert.ok(layoutScore(mk(3, 0, 50)) > layoutScore(mk(2, 2, 1)));
-  assert.ok(layoutScore(mk(2, 2, 50)) > layoutScore(mk(2, 1, 1)));
-  assert.ok(layoutScore(mk(2, 2, 3)) > layoutScore(mk(2, 2, 4)));
+test('layouts rank by parked, quick-access free, free exits, quick-access depth, then moves', () => {
+  const vehicles = [{ id: 1, quickAccess: true }, { id: 2 }];
+  // parked: [quickFree, quickDepth, otherFree, moves] per vehicle
+  const mk = (q, o) => ({
+    parkedCount: (q ? 1 : 0) + (o ? 1 : 0),
+    freeExit: (q?.free ? 1 : 0) + (o?.free ? 1 : 0),
+    results: [
+      q ? { id: 1, parked: true, exit: { ok: q.free }, depth: q.depth, moves: q.moves ?? 1 } : { id: 1, parked: false },
+      o ? { id: 2, parked: true, exit: { ok: o.free }, depth: 20, moves: o.moves ?? 1 } : { id: 2, parked: false },
+    ],
+  });
+  const better = (a, b) => assert.ok(compareLayouts(a, b, vehicles) > 0 && compareLayouts(b, a, vehicles) < 0);
+  better(mk({ free: false, depth: 30 }, { free: false }), mk({ free: true, depth: 5 }, null));
+  better(mk({ free: true, depth: 30 }, { free: false }), mk({ free: false, depth: 5 }, { free: true }));
+  better(mk({ free: true, depth: 30 }, { free: true }), mk({ free: true, depth: 5 }, { free: false }));
+  better(mk({ free: true, depth: 5 }, { free: true }), mk({ free: true, depth: 30 }, { free: true }));
+  better(mk({ free: true, depth: 5 }, { free: true, moves: 1 }), mk({ free: true, depth: 5.1 }, { free: true, moves: 9 }));
 });
 
 test('explore is never worse than the plain greedy layout, and is repeatable for a seed', () => {
   const c = makeConfig('sideDoor');
-  const greedy = layoutScore(planLayout(c));
+  const greedy = planLayout(c);
   const a = explore(c, { trials: 4, seed: 42 });
   const b = explore(c, { trials: 4, seed: 42 });
-  assert.ok(layoutScore(a) >= greedy);
-  assert.equal(layoutScore(a), layoutScore(b));
+  assert.ok(compareLayouts(a, greedy, c.vehicles) >= 0);
+  assert.equal(compareLayouts(a, b, c.vehicles), 0);
   assert.deepEqual(a.results.map((x) => x.pose), b.results.map((x) => x.pose));
+});
+
+const byName = (c, r, name) => r.results[c.vehicles.findIndex((v) => v.name === name)];
+
+test('quick-access vehicle parks nearest the door with a clear way out', () => {
+  for (const name of ['threeBay', 'barn']) {
+    const c = makeConfig(name);
+    const plain = byName(c, planLayout(c), 'Large SUV');
+    c.vehicles.find((v) => v.name === 'Large SUV').quickAccess = true;
+    const r = planLayout(c);
+    const suv = byName(c, r, 'Large SUV');
+    assert.ok(suv.parked && suv.exit.ok, `${name}: SUV parked and free`);
+    assert.ok(suv.depth < plain.depth - 5, `${name}: SUV moved toward the door (${plain.depth.toFixed(1)} -> ${suv.depth.toFixed(1)})`);
+    for (const x of r.results) if (x.parked && x !== suv) assert.ok(suv.depth <= x.depth, `${name}: SUV is nearest the door`);
+    assert.equal(r.order.at(-1), c.vehicles.findIndex((v) => v.quickAccess), 'parked last');
+  }
+});
+
+test('quick access swaps a tandem garage: that car goes in front', () => {
+  const c = makeConfig('tandem');
+  c.vehicles[0].quickAccess = true; // the small car, which normally ends up at the back
+  const r = planLayout(c);
+  const [quick, other] = r.results;
+  assert.ok(quick.pose.y < other.pose.y);
+  assert.equal(quick.exit.ok, true);
+  assert.deepEqual(other.exit.blockedBy, [quick.id]);
+});
+
+test('quick access does not cost a parking space in the three-bay garage', () => {
+  const c = makeConfig('threeBay');
+  c.vehicles.forEach((v) => { v.quickAccess = true; });
+  const r = planLayout(c);
+  assert.equal(r.parkedCount, 3);
+  assert.equal(r.freeExit, 3);
+});
+
+test('a pinned vehicle stays put even if marked quick access', () => {
+  const c = makeConfig('threeBay');
+  c.vehicles[1].quickAccess = true;
+  c.vehicles[1].pin = { x: 18, y: 10, th: Math.PI / 2 };
+  const r = planLayout(c);
+  assert.equal(r.order[0], 1);
+  assert.ok(Math.hypot(r.results[1].pose.x - 18, r.results[1].pose.y - 10) < 1);
 });
