@@ -131,12 +131,13 @@ function chooseAuto(ctx, search, m, remaining) {
   return best;
 }
 
-function choosePinned(search, pin) {
+function choosePinned(world, m, search, pin) {
   const ith = headingBin(pin.th);
   let best = -1, bestD = 1.0;
   for (const idx of search.closedList) {
     if (idx % NTH !== ith) continue;
     const p = search.pose(idx);
+    if (!obbInsideRect(bodyObb(m, p.x, p.y, p.th), 0, 0, world.W, world.D)) continue;
     const d = Math.hypot(p.x - pin.x, p.y - pin.y);
     if (d < bestD || (d === bestD && search.cost(idx) < search.cost(best))) { bestD = d; best = idx; }
   }
@@ -208,7 +209,11 @@ export function planLayout(config, options = {}) {
       return;
     }
     search.run(starts);
-    const idx = v.pin ? choosePinned(search, v.pin) : chooseAuto(ctx, search, m, seq.length - n - 1);
+    if (v.pin && !obbInsideRect(bodyObb(m, v.pin.x, v.pin.y, v.pin.th), 0, 0, world.W, world.D)) {
+      results[vi] = { id: v.id, parked: false, reason: 'pinned spot is not inside the building' };
+      return;
+    }
+    const idx = v.pin ? choosePinned(world, m, search, v.pin) : chooseAuto(ctx, search, m, seq.length - n - 1);
     if (idx < 0) {
       results[vi] = {
         id: v.id, parked: false,

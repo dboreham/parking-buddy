@@ -1,5 +1,7 @@
 # Parking Buddy
 
+[![CI](https://github.com/dboreham/parking-buddy/actions/workflows/ci.yml/badge.svg)](https://github.com/dboreham/parking-buddy/actions/workflows/ci.yml)
+
 Will your vehicles fit in the garage or barn you're planning? Parking Buddy lets
 you set the building size and doors, pick some vehicles, then simulates driving
 each one in. Each vehicle steers within its real turning circle, keeps clearance
@@ -14,9 +16,11 @@ Serve the directory over HTTP. Opening `index.html` as a `file://` URL won't
 work, because the planner runs in a module Web Worker.
 
 ```sh
-npm start            # or: python3 -m http.server 8000
+npm start            # tiny Node static server (tools/serve.mjs), no install needed
 # open http://localhost:8000
 ```
+
+Any static server works too, e.g. `python3 -m http.server 8000`.
 
 To deploy, copy `index.html`, `css/` and `js/` to any static host.
 
@@ -76,7 +80,30 @@ the browser's local storage.
 
 ## Tests
 
+Unit tests use Node's built-in runner and need no install (any current Node LTS):
+
 ```sh
-npm test       # planner scenarios (Node 20+)
-npm run bench  # timing and scenario printout
+npm test       # geometry, vehicle model, walls/doors, planner, layout, explore
+npm run bench  # prints the layout and timing for each scenario in test/scenarios.mjs
 ```
+
+The layout tests include an invariant check. For every scenario, each planned
+path is replayed and must:
+- be continuous;
+- never turn tighter than the vehicle's minimum radius;
+- never touch a wall, an obstacle or an already-parked vehicle (with clearance);
+- end in a spot that meets the spacing rules.
+
+Browser tests drive the real page in headless Chromium with
+[Playwright](https://playwright.dev). They cover planning, animation, doors,
+drag-to-pin, share links, explore and the phone layout:
+
+```sh
+npm install
+npx playwright install --with-deps chromium   # once; --with-deps uses sudo for system libraries
+npm run test:e2e
+```
+
+Playwright starts `tools/serve.mjs` on port 8123 itself. The page exposes a
+read-only `window.__parkingBuddy` hook, used by these tests to locate vehicles
+on the canvas and see what's drawn.

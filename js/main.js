@@ -470,6 +470,7 @@ const animDone = () => !anim.timeline || (!anim.playing && anim.t >= anim.timeli
 // ---------------------------------------------------------------- scene / drawing
 
 let drawQueued = false;
+let lastDrawn = [];
 function requestDraw() {
   if (drawQueued) return;
   drawQueued = true;
@@ -537,6 +538,7 @@ function draw() {
       highlight: hoverId === id,
     });
   }
+  lastDrawn = vehicles.map((v) => ({ id: v.id, ghost: !!v.ghost, moving: !!v.moving }));
   renderer.draw({
     world, vehicles,
     options: {
@@ -695,6 +697,35 @@ function setupCanvas() {
   ro.observe(canvas.parentElement);
   matchMedia('(prefers-color-scheme: dark)').addEventListener('change', requestDraw);
 }
+
+// ---------------------------------------------------------------- test hooks
+
+// Read-only view of the app for the browser tests in e2e/.
+window.__parkingBuddy = {
+  // Page coordinates of a point given in building feet.
+  worldToClient(x, y) {
+    const r = $('canvas').getBoundingClientRect();
+    const [sx, sy] = renderer.toScreen(x, y);
+    return [r.left + sx, r.top + sy];
+  },
+  snapshot() {
+    return {
+      busy: !$('busy').hidden,
+      playing: anim.playing,
+      stale,
+      drawn: lastDrawn,
+      result: result && {
+        parkedCount: result.parkedCount,
+        freeExit: result.freeExit,
+        vehicles: result.results.map((r) => {
+          const v = result.snap.vehicles.find((x) => x.id === r.id);
+          const centre = r.parked ? bodyObb(vehicleModel(v), r.pose.x, r.pose.y, r.pose.th) : null;
+          return { id: r.id, name: v.name, parked: r.parked, reason: r.reason, pose: r.pose, centre: centre && [centre.cx, centre.cy] };
+        }),
+      },
+    };
+  },
+};
 
 // ---------------------------------------------------------------- boot
 
