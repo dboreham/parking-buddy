@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Parking Buddy</title>
+  <meta name="description" content="Simulate parking vehicles in a proposed garage or barn, with real turning circles.">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <h1>Parking Buddy</h1>
+    <span class="tagline">Will they fit? Drive them in and see.</span>
+    <span class="spacer"></span>
+    <button id="btn-share" class="ghost" title="Copy a link that reproduces this setup">Copy share link</button>
+    <button id="btn-reset" class="ghost" title="Restore the example setup">Reset</button>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <section>
+        <h2>Building</h2>
+        <div class="grid2">
+          <label>Width (ft)<input id="b-width" class="len"></label>
+          <label>Depth (ft)<input id="b-depth" class="len"></label>
+        </div>
+        <p class="hint">Interior dimensions. Lengths accept decimal feet or feet and inches, e.g. <code>9'6"</code>.</p>
+      </section>
+
+      <section>
+        <h2>Doors</h2>
+        <div id="doors"></div>
+        <button id="add-door" class="small">+ Add door</button>
+        <p class="hint">Offset is measured from the left end of the front/back wall, or the front end of a side wall. Doors marked <em>auto</em> are spaced evenly along their wall; type an offset to place one yourself.</p>
+      </section>
+
+      <section>
+        <h2>Vehicles</h2>
+        <div id="vehicles"></div>
+        <div class="row">
+          <select id="preset"></select>
+          <button id="add-vehicle" class="small">+ Add</button>
+        </div>
+        <p class="hint">Vehicles are parked in list order (pinned ones first). Drag a parked car on the plan to pin it there; scroll or press <kbd>R</kbd> over it to rotate.</p>
+      </section>
+
+      <section>
+        <h2>Obstacles</h2>
+        <div id="obstacles"></div>
+        <button id="add-obstacle" class="small">+ Add obstacle</button>
+        <p class="hint">Posts, benches, stairs: rectangles from the front-left interior corner.</p>
+      </section>
+
+      <section>
+        <h2>Rules</h2>
+        <div class="grid2">
+          <label title="Minimum gap kept around the vehicle (including mirrors) while it moves">Clearance moving (ft)<input id="s-clearance" class="len"></label>
+          <label title="Space beside a parked vehicle to open its doors">Side gap parked (ft)<input id="s-parkGap" class="len"></label>
+          <label title="Space in front of and behind a parked vehicle">End gap parked (ft)<input id="s-endGap" class="len"></label>
+          <label title="Depth of the driveway in front of door walls, used to swing in">Apron depth (ft)<input id="s-apron" class="len"></label>
+        </div>
+        <label class="check"><input type="checkbox" id="s-allowAngled"> Allow angled parking</label>
+        <label class="check"><input type="checkbox" id="s-requireExit"> Try to keep every vehicle free to leave</label>
+      </section>
+    </aside>
+
+    <main class="stage">
+      <div class="toolbar">
+        <button id="btn-run" class="primary">▶ Run simulation</button>
+        <button id="btn-explore" title="Try many parking orders and spot choices and keep the best">Explore layouts</button>
+        <label class="inline">trials <input id="trials" type="number" min="2" max="200" value="20"></label>
+        <span class="sep"></span>
+        <button id="btn-play" class="icon-btn" title="Play / pause (space)"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M3 2l7 6-7 6z" fill="currentColor"/><rect x="11" y="2" width="2" height="12" fill="currentColor"/></svg></button>
+        <button id="btn-restart" class="icon-btn" title="Replay from the start"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M8 3a5 5 0 1 1-4.6 3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M1 3h5v5z" fill="currentColor"/></svg></button>
+        <button id="btn-end" class="icon-btn" title="Skip to the end"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M2 2l6 6-6 6zM8 2l6 6-6 6z" fill="currentColor"/></svg></button>
+        <label class="inline">speed <input id="speed" type="range" min="2" max="40" value="12"></label>
+        <span class="sep"></span>
+        <label class="inline"><input type="checkbox" id="show-paths" checked> paths</label>
+        <label class="inline" title="Parked vehicles: the side/end gap kept clear of walls and other vehicles. Moving vehicles: the clearance kept while driving."><input type="checkbox" id="show-clearance"> clearance</label>
+        <label class="inline"><input type="checkbox" id="auto-run" checked> auto-run</label>
+      </div>
+      <div class="canvas-wrap">
+        <canvas id="canvas"></canvas>
+        <div id="busy" class="busy" hidden><span class="spinner"></span><span id="busy-text">Planning…</span><button id="btn-cancel" class="small">Cancel</button></div>
+      </div>
+      <div id="results" class="results"></div>
+    </main>
+  </div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
