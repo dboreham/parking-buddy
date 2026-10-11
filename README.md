@@ -11,6 +11,10 @@ from walls, door jambs and other vehicles, and backs up when it needs to.
   <img src="docs/demo.gif" width="380" alt="Animation of five vehicles driving one at a time through a single 14 ft door into a 32 by 52 ft barn and parking in rows">
 </p>
 
+<p align="center">
+  <img src="docs/screenshot.png" width="800" alt="The full Parking Buddy page: building, door and vehicle settings in the sidebar, the planned layout of six vehicles with the quick-access Large SUV nearest the door, and the results list showing which vehicles can drive out">
+</p>
+
 It's a static web app: plain HTML, CSS and ES modules with no build step and no
 dependencies.
 
