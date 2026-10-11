@@ -1,0 +1,47 @@
+name: Publish Container Images
+
+# Builds the stack's container image (see stack/stack.yml) and publishes it to
+# GHCR, tagged with this repo's commit hash.  A later `stack prepare` on a deploy
+# host computes the same hash, finds ghcr.io/dboreham/parking-buddy:<hash> and
+# pulls it instead of building -- no configuration needed on the host, because
+# stack infers ghcr.io from this repo's github.com remote.
+#
+# Only clean, committed state publishes: a dirty checkout or an unpinned input
+# (e.g. an uncommitted stack/stack.lock) produces a `stackdev-` version, which
+# stack never pushes.
+#
+# The runner is amd64, so only an amd64 image is published.  An arm64 deploy
+# host will not match and will fall back to building locally.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  publish:
+    name: Build and publish
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install stack
+        run: |
+          mkdir -p "$HOME/bin"
+          curl -fL -o "$HOME/bin/stack" https://github.com/bozemanpass/stack/releases/latest/download/stack
+          chmod +x "$HOME/bin/stack"
+          echo "$HOME/bin" >> "$GITHUB_PATH"
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and publish
+        run: stack prepare --stack ./stack --publish-images --image-registry ghcr.io
