@@ -1,0 +1,10 @@
+name: parking-buddy
+description: "Parking Buddy: browser-based garage parking simulator"
+containers:
+  # No Dockerfile: the repo is served by nginx via the `static-content` wrapper.
+  # .dockerignore limits the build context to the files the app serves.
+  - name: dboreham/parking-buddy
+    wrapper: static-content
+pods:
+  - name: parking-buddy
+    path: ./stack/pods/parking-buddy

@@ -1,0 +1,4 @@
+wrappers:
+  static-content:
+    ref: github.com/bozemanpass/stack-wrapper-static-content
+    hash: 91fb1e11538b67b5d7cbbde3570c7d2f3153f087
