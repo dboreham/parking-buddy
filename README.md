@@ -32,6 +32,17 @@ Any static server works too, e.g. `python3 -m http.server 8000`.
 
 To deploy, copy `index.html`, `css/` and `js/` to any static host.
 
+Or deploy it as a container with [stack](https://github.com/bozemanpass/stack).
+The stack in `stack/` serves those same files with nginx via the `static-content`
+wrapper; `.dockerignore` limits the image to them:
+
+```sh
+stack build containers --stack ./stack
+stack init --stack ./stack --output parking-buddy-spec.yml --deploy-to compose --map-ports-to-host any-same
+stack deploy --spec-file parking-buddy-spec.yml --deployment-dir ./parking-buddy-deployment
+stack manage --dir ./parking-buddy-deployment start   # serves on port 80
+```
+
 ## Using it
 
 - **Building**: interior width and depth. Lengths accept `9.5`, `9'6"`, `9 ft 6 in` or `114"`.

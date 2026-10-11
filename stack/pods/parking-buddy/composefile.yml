@@ -1,0 +1,6 @@
+services:
+  parking-buddy:
+    image: dboreham/parking-buddy:stack
+    restart: always
+    ports:
+      - 80

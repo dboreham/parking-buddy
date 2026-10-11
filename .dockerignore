@@ -1,0 +1,6 @@
+# Container build context for the stack static-content wrapper (see stack/stack.yml):
+# everything in it is served, so allow only the app's own files.
+*
+!index.html
+!css/
+!js/
