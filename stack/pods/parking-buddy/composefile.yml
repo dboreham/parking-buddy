@@ -3,4 +3,4 @@ services:
     image: dboreham/parking-buddy:stack
     restart: always
     ports:
-      - 80
+      - 80 # @stack http-proxy /
