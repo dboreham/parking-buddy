@@ -42,6 +42,7 @@ stack init --stack ./stack --output parking-buddy-spec.yml --deploy-to compose -
 stack deploy --spec-file parking-buddy-spec.yml --deployment-dir ./parking-buddy-deployment
 stack manage --dir ./parking-buddy-deployment start   # serves on port 80
 ```
+Parking Buddy is also hosted at [parking.stack.servesthe.world](https://parking.stack.servesthe.world/)
 
 ## Using it
 
