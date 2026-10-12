@@ -450,6 +450,8 @@ function play() {
   if (anim.t >= anim.timeline.total) anim.t = 0;
   anim.playing = true;
   anim.last = performance.now();
+  // Draw the first frame now so nothing (screen or snapshot) shows the previous run's cars.
+  draw();
   requestAnimationFrame(tick);
 }
 
@@ -465,7 +467,8 @@ function finishAnimation() {
 
 function tick(now) {
   if (!anim.playing) return;
-  const dt = Math.min(0.1, (now - anim.last) / 1000);
+  // A frame's timestamp can predate the performance.now() taken in play(); never step backwards.
+  const dt = Math.max(0, Math.min(0.1, (now - anim.last) / 1000));
   anim.last = now;
   anim.t += dt * Number($('speed').value);
   if (anim.t >= anim.timeline.total) {
