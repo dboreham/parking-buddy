@@ -134,3 +134,7 @@ npm run test:e2e
 Playwright starts `tools/serve.mjs` on port 8123 itself. The page exposes a
 read-only `window.__parkingBuddy` hook, used by these tests to locate vehicles
 on the canvas and see what's drawn.
+
+## Provenance
+
+Parking Buddy was mostly created by Claude Code using Opus 5.5. The session transcript is [here](https://codeassociates.github.io/conversations-with-claude/conversations/side-projects/parking-buddy/index.html).
